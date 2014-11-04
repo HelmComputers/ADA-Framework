@@ -19,14 +19,15 @@
 
 package com.mobandme.ada;
 
-import java.security.SecureRandom;
+import com.mobandme.ada.exceptions.AdaFrameworkException;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-
-import com.mobandme.ada.exceptions.AdaFrameworkException;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.Arrays;
 
 /**
  * Helper class to manage encryption processes. 
@@ -78,17 +79,21 @@ final class EncryptionHelper {
 			throw new AdaFrameworkException(e);
 		}
 	}
-	
-	private static byte[] getRawKey(byte[] seed) throws Exception {
+
+    private static byte[] getRawKey(byte[] seed) throws Exception {
         KeyGenerator kgen = KeyGenerator.getInstance(encriptionAlgorithm);
         SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
         sr.setSeed(seed);
-        
-	    kgen.init(128, sr); // 192 and 256 bits may not be available
-	    SecretKey skey = kgen.generateKey();
-	    byte[] raw = skey.getEncoded();
-	    return raw;
-	}
+
+        kgen.init(128, sr); // 192 and 256 bits may not be available
+        MessageDigest sha = MessageDigest.getInstance("SHA-1");
+        seed = sha.digest(seed);
+        seed = Arrays.copyOf(seed, 16);
+        SecretKey skey = new SecretKeySpec(seed, "AES");//kgen.generateKey();
+
+        byte[] raw = skey.getEncoded();
+        return raw;
+    }
 	
 	
 	private static byte[] encrypt(byte[] raw, byte[] clear) throws Exception {
